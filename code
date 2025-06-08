@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract DeadManSwitch {
+    
+    address public owner;          
+    address public heir;          
+    uint public lastCheckIn;       
+    uint public checkInInterval;   
+    bool public isPaused;          
+
+    event CheckedIn(address indexed owner, uint timestamp);
+    event HeirChanged(address indexed previousHeir, address indexed newHeir);
+    event Triggered(address indexed by, uint timestamp);
+    event Withdrawn(address indexed to, uint amount);
+    event Paused();
+    event Resumed();
+
+    constructor(address _heir, uint _intervalInDays) payable {
+        require(_heir != address(0), "Heir cannot be zero address");
+        owner = msg.sender;
+        heir = _heir;
+        checkInInterval = _intervalInDays * 1 days;
+        lastCheckIn = block.timestamp;
+        isPaused = false;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the owner");
+        _;
+    }
+
+    modifier notPaused() {
+        require(!isPaused, "Switch is paused");
+        _;
+    }
+
+    function checkIn() public onlyOwner notPaused {
+        lastCheckIn = block.timestamp;
+        emit CheckedIn(msg.sender, lastCheckIn);
+    }
+
+    function setHeir(address _newHeir) public onlyOwner {
+        require(_newHeir != address(0), "Heir cannot be zero address");
+        emit HeirChanged(heir, _newHeir);
+        heir = _newHeir;
+    }
+
+    function setCheckInInterval(uint _intervalInDays) public onlyOwner {
+        checkInInterval = _intervalInDays * 1 days;
+    }
+
+    function isOwnerAlive() public view returns (bool) {
+        return block.timestamp <= lastCheckIn + checkInInterval;
+    }
+
+    function triggerSwitch() public notPaused {
+        require(!isOwnerAlive(), "Owner is still alive");
+        emit Triggered(msg.sender, block.timestamp);
+        payable(heir).transfer(address(this).balance);
+    }
+
+    function withdraw(uint amount) public onlyOwner {
+        require(amount <= address(this).balance, "Insufficient balance");
+        payable(owner).transfer(amount);
+        emit Withdrawn(owner, amount);
+    }
+
+    function pauseSwitch() public onlyOwner {
+        isPaused = true;
+        emit Paused();
+    }
+
+    function resumeSwitch() public onlyOwner {
+        isPaused = false;
+        emit Resumed();
+    }
+
+    function getContractDetails() public view returns (
+        address _owner,
+        address _heir,
+        uint _lastCheckIn,
+        uint _checkInInterval,
+        uint _timeLeft,
+        bool _paused,
+        uint _balance
+    ) {
+        _owner = owner;
+        _heir = heir;
+        _lastCheckIn = lastCheckIn;
+        _checkInInterval = checkInInterval;
+        _paused = isPaused;
+        _balance = address(this).balance;
+
+        if (block.timestamp > lastCheckIn + checkInInterval) {
+            _timeLeft = 0;
+        } else {
+            _timeLeft = (lastCheckIn + checkInInterval) - block.timestamp;
+        }
+    }
+
+    receive() external payable {}
+
+    fallback() external payable {}
+}
