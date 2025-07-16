@@ -1,0 +1,110 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>DeadManSwitch Web3 Frontend</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; }
+    input, button { margin: 5px; }
+    h2 { margin-top: 30px; }
+    hr { margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>DeadManSwitch Control Panel</h1>
+  <div id="account"></div>
+  <div>
+    <button onclick="getDetails()">Refresh Contract Details</button>
+    <div id="details"></div>
+  </div>
+  <hr>
+  <h2>Owner Actions</h2>
+  <button onclick="checkIn()">Check In</button><br>
+  <input type="number" id="interval" placeholder="New Interval (days)">
+  <button onclick="setInterval()">Set Check-in Interval</button><br>
+  <input type="text" id="newHeir" placeholder="New Heir Address">
+  <button onclick="setHeir()">Set Heir</button><br>
+  <input type="text" id="withdrawAmt" placeholder="Withdraw Amount (ETH)">
+  <button onclick="withdraw()">Withdraw</button><br>
+  <button onclick="pause()">Pause</button>
+  <button onclick="resume()">Resume</button>
+  <hr>
+  <h2>Anyone Can</h2>
+  <button onclick="trigger()">Trigger Switch</button>
+  <script>
+    // ======= CONFIGURATION =======
+    const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
+    const ABI = [ /* Paste your ABI here */ ];
+
+    let web3, contract, accounts;
+
+    window.addEventListener('load', async () => {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        try {
+          accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          document.getElementById('account').innerText = "Connected: " + accounts[0];
+          contract = new web3.eth.Contract(ABI, CONTRACT_ADDRESS);
+          getDetails();
+        } catch (error) {
+          alert("Wallet connection failed!");
+        }
+      } else {
+        alert("Please install MetaMask!");
+      }
+    });
+
+    async function getDetails() {
+      if (!contract) return;
+      const details = await contract.methods.getContractDetails().call();
+      document.getElementById('details').innerHTML =
+        `<b>Owner:</b> ${details._owner}<br>
+         <b>Heir:</b> ${details._heir}<br>
+         <b>Last Check-in:</b> ${new Date(details._lastCheckIn * 1000).toLocaleString()}<br>
+         <b>Check-in Interval (seconds):</b> ${details._checkInInterval}<br>
+         <b>Time Left:</b> ${details._timeLeft} seconds<br>
+         <b>Paused:</b> ${details._paused}<br>
+         <b>Balance:</b> ${web3.utils.fromWei(details._balance)} ETH`;
+    }
+
+    async function checkIn() {
+      await contract.methods.checkIn().send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function setInterval() {
+      const days = document.getElementById('interval').value;
+      await contract.methods.setCheckInInterval(days).send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function setHeir() {
+      const newHeir = document.getElementById('newHeir').value;
+      await contract.methods.setHeir(newHeir).send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function withdraw() {
+      const amt = document.getElementById('withdrawAmt').value;
+      const weiAmt = web3.utils.toWei(amt);
+      await contract.methods.withdraw(weiAmt).send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function pause() {
+      await contract.methods.pauseSwitch().send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function resume() {
+      await contract.methods.resumeSwitch().send({ from: accounts[0] });
+      getDetails();
+    }
+
+    async function trigger() {
+      await contract.methods.triggerSwitch().send({ from: accounts[0] });
+      getDetails();
+    }
+  </script>
+</body>
+</html>
