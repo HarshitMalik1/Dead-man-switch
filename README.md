@@ -93,23 +93,43 @@ Owner Functions:
 
 
 Heir/Anyone (Conditional) Functions:
+
 •	triggerSwitch(): Initiates fund transfer if the owner is not alive and the grace period has passed.
+
 •	emergencyChangeOwner(address _newOwner): Allows the primary heir to take ownership if the owner is not alive.
 
+
+
 Public View Functions (Read-Only):
+
 •	owner(): Returns the contract owner's address.
+
 •	heir(): Returns the primary heir's address.
+
 •	lastCheckIn(): Returns the timestamp of the last check-in.
+
 •	checkInInterval(): Returns the check-in interval in seconds.
+
 •	gracePeriod(): Returns the grace period in seconds.
+
 •	isOwnerAlive(): Checks if the owner is currently considered alive.
+
 •	getTimeUntilDanger(): Time remaining until checkInInterval expires.
+
 •	getTimeUntilTrigger(): Time remaining until checkInInterval + gracePeriod expires.
+
 •	isPaused(): Checks if the switch is paused.
+
 •	getContractDetails(): Returns a comprehensive set of contract state variables.
+
 •	getBackupHeirs(): Returns the list of backup heirs.
+
 •	getCheckInHistory(uint256 limit): Returns recent check-in events.
+
 •	getHeirChangeHistory(uint256 limit): Returns recent heir change events.
+
 •	getHealthScore(): Returns the calculated health score.
+
 •	estimateGas(string calldata functionName): Provides average gas usage for a function.
+
 •	canBTriggered(): Checks if the switch is ready to be triggered.
