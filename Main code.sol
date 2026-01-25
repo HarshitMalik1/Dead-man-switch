@@ -176,7 +176,7 @@ contract DeadManSwitch {
     }
 
     // BUG FIX #1: Fixed critical logic error in triggerSwitch
-    function triggerSwitch() external notPaused {
+    function triggerSwitch() external onlyAuthorized notPaused {
         uint256 gasStart = gasleft();
 
         if (isOwnerAlive()) revert OwnerStillAlive();
